@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "601972829668",
+    "project_id": "socialme-c7aa4",
+    "storage_bucket": "socialme-c7aa4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:601972829668:android:eaea169f8f0b0edb6eabf1",
+        "android_client_info": {
+          "package_name": "com.example.social_me"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBagTucMqS5Gt386EJZCNRWkfzD_Grtjrw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
