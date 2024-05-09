@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/SocialMe.iml" filepath="$PROJECT_DIR$/.idea/SocialMe.iml" />
+      <module fileurl="file://$PROJECT_DIR$/social_me.iml" filepath="$PROJECT_DIR$/social_me.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android/social_me_android.iml" filepath="$PROJECT_DIR$/android/social_me_android.iml" />
     </modules>
   </component>
 </project>
