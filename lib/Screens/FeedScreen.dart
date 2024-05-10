@@ -6,39 +6,39 @@ import 'package:social_me/Screens/ProfileScreen.dart';
 
 class FeedScreen extends StatelessWidget {
   Future<DocumentSnapshot<Map<String, dynamic>>> _getUserData() async {
-  String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-  int maxRetries = 3; // Maksimum deneme sayısı
-  int retryDelayMilliseconds = 1000; // Deneme aralığı (1 saniye)
+    String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    int maxRetries = 3; // Maksimum deneme sayısı
+    int retryDelayMilliseconds = 1000; // Deneme aralığı (1 saniye)
 
-  for (int i = 0; i < maxRetries; i++) {
-    try {
-      return await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    } catch (e) {
-      if (i == maxRetries - 1) {
-        throw e; // Maksimum deneme sayısına ulaşıldığında hatayı yukarı yönlendir
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        return await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      } catch (e) {
+        if (i == maxRetries - 1) {
+          throw e; // Maksimum deneme sayısına ulaşıldığında hatayı yukarı yönlendir
+        }
+        await Future.delayed(Duration(milliseconds: retryDelayMilliseconds));
       }
-      await Future.delayed(Duration(milliseconds: retryDelayMilliseconds));
     }
+    throw Exception('Veri alınamadı');
   }
-  throw Exception('Veri alınamadı');
-}
 
-Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
-  int maxRetries = 3; // Maksimum deneme sayısı
-  int retryDelayMilliseconds = 1000; // Deneme aralığı (1 saniye)
+  Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
+    int maxRetries = 3; // Maksimum deneme sayısı
+    int retryDelayMilliseconds = 1000; // Deneme aralığı (1 saniye)
 
-  for (int i = 0; i < maxRetries; i++) {
-    try {
-      return await FirebaseFirestore.instance.collection('feels').orderBy('timestamp', descending: true).get();
-    } catch (e) {
-      if (i == maxRetries - 1) {
-        throw e; // Maksimum deneme sayısına ulaşıldığında hatayı yukarı yönlendir
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        return await FirebaseFirestore.instance.collection('feels').orderBy('timestamp', descending: true).get();
+      } catch (e) {
+        if (i == maxRetries - 1) {
+          throw e; // Maksimum deneme sayısına ulaşıldığında hatayı yukarı yönlendir
+        }
+        await Future.delayed(Duration(milliseconds: retryDelayMilliseconds));
       }
-      await Future.delayed(Duration(milliseconds: retryDelayMilliseconds));
     }
+    throw Exception('Veri alınamadı');
   }
-  throw Exception('Veri alınamadı');
-}
 
   @override
   Widget build(BuildContext context) {
@@ -60,13 +60,18 @@ Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
                   return Text('Hata: ${snapshot.error}');
                 } else {
                   Map<String, dynamic>? userData = snapshot.data?.data();
+                  if (userData == null) {
+                    return Text('Kullanıcı verileri yüklenirken bir hata oluştu.');
+                  }
+                  print(userData);
                   return Text(
-                    'Merhaba, ${userData?['name']} ${userData?['surname']}!',
+                    'Merhaba, ${userData['name'] ?? 'İsim'} ${userData['surname'] ?? 'Soyisim'}!',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   );
                 }
               },
             ),
+            
             SizedBox(height: 20),
             Expanded(
               child: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -81,9 +86,11 @@ Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
                     return ListView.builder(
                       itemCount: feels.length,
                       itemBuilder: (context, index) {
+
                         Map<String, dynamic> feelData = feels[index].data();
                         Timestamp timestamp = feelData['timestamp'] ?? Timestamp.now();
                         DateTime date = timestamp.toDate();
+                        print('Gönderen: ${feelData['userName']}');
                         String formattedDate = '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
 
                         return Card(
@@ -132,6 +139,7 @@ Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
                                   ],
                                 ),
                                 Text('Gönderen: ${feelData['userName']} - $formattedDate'),
+
                               ],
                             ),
                           ),
