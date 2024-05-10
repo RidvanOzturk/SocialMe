@@ -42,7 +42,11 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text,
         password: _passwordController.text,
       );
-
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Kayıt Başarılı!'),
+        ),
+      );
       print("Kayıt başarılı!");
 
       Navigator.push(
@@ -50,8 +54,21 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (context) => FeedScreen()),
       );
     } catch (e) {
-      print("Kayıt başarısız! Hata: $e");
+  String errorMessage = 'Bir hata oluştu.';
+  if (e is FirebaseAuthException) {
+    if (e.code == 'weak-password') {
+      errorMessage = 'Şifreniz en az 6 karakter olmalıdır.';
+    } else if (e.code == 'email-already-in-use') {
+      errorMessage = 'Bu e-posta adresi zaten kullanımda.';
     }
+  }
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(errorMessage),
+    ),
+  );
+}
   }
 
   @override
