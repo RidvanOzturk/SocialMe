@@ -19,7 +19,6 @@ import 'package:flutter/foundation.dart'
 /// ```
 /// 
 
-
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -47,48 +46,47 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAt3WD0PADRHPeo8KljGCBuwrVb3iqsXF4',
-    appId: '1:601972829668:web:cbea4437b500eba76eabf1',
-    messagingSenderId: '601972829668',
-    projectId: 'socialme-c7aa4',
-    authDomain: 'socialme-c7aa4.firebaseapp.com',
-    storageBucket: 'socialme-c7aa4.appspot.com',
-    measurementId: 'G-SJPVCCHYCE',
+    apiKey: 'AIzaSyCSlOF-lda8vl21FLShPgYvK70IQ_l42aM',
+    appId: '1:502891628679:web:6c8dd3a6c91762d93e1022',
+    messagingSenderId: '502891628679',
+    projectId: 'social-me-1baf9',
+    authDomain: 'social-me-1baf9.firebaseapp.com',
+    storageBucket: 'social-me-1baf9.appspot.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBagTucMqS5Gt386EJZCNRWkfzD_Grtjrw',
-    appId: '1:601972829668:android:eaea169f8f0b0edb6eabf1',
-    messagingSenderId: '601972829668',
-    projectId: 'socialme-c7aa4',
-    storageBucket: 'socialme-c7aa4.appspot.com',
+    apiKey: 'AIzaSyDnPqJTQKkn5aRk3gewmAIxVxtEj-gPoxc',
+    appId: '1:502891628679:android:ace36c8dfa2356603e1022',
+    messagingSenderId: '502891628679',
+    projectId: 'social-me-1baf9',
+    storageBucket: 'social-me-1baf9.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCbe_2_9KKRGtrp5zjsJnjFoE5slSntdrE',
-    appId: '1:601972829668:ios:7fb4a3235d5510af6eabf1',
-    messagingSenderId: '601972829668',
-    projectId: 'socialme-c7aa4',
-    storageBucket: 'socialme-c7aa4.appspot.com',
+    apiKey: 'AIzaSyAjePXhJlN8aNDjyEYK3h96-47K2U4lNFw',
+    appId: '1:502891628679:ios:d55434a597f3a50d3e1022',
+    messagingSenderId: '502891628679',
+    projectId: 'social-me-1baf9',
+    storageBucket: 'social-me-1baf9.appspot.com',
     iosBundleId: 'com.example.socialMe',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCbe_2_9KKRGtrp5zjsJnjFoE5slSntdrE',
-    appId: '1:601972829668:ios:7fb4a3235d5510af6eabf1',
-    messagingSenderId: '601972829668',
-    projectId: 'socialme-c7aa4',
-    storageBucket: 'socialme-c7aa4.appspot.com',
+    apiKey: 'AIzaSyAjePXhJlN8aNDjyEYK3h96-47K2U4lNFw',
+    appId: '1:502891628679:ios:d55434a597f3a50d3e1022',
+    messagingSenderId: '502891628679',
+    projectId: 'social-me-1baf9',
+    storageBucket: 'social-me-1baf9.appspot.com',
     iosBundleId: 'com.example.socialMe',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAt3WD0PADRHPeo8KljGCBuwrVb3iqsXF4',
-    appId: '1:601972829668:web:419132f9ab69c3336eabf1',
-    messagingSenderId: '601972829668',
-    projectId: 'socialme-c7aa4',
-    authDomain: 'socialme-c7aa4.firebaseapp.com',
-    storageBucket: 'socialme-c7aa4.appspot.com',
-    measurementId: 'G-TF7YDR3D4E',
+    apiKey: 'AIzaSyCSlOF-lda8vl21FLShPgYvK70IQ_l42aM',
+    appId: '1:502891628679:web:f04634a70e9af4e63e1022',
+    messagingSenderId: '502891628679',
+    projectId: 'social-me-1baf9',
+    authDomain: 'social-me-1baf9.firebaseapp.com',
+    storageBucket: 'social-me-1baf9.appspot.com',
   );
+
 }
