@@ -6,13 +6,39 @@ import 'package:social_me/Screens/ProfileScreen.dart';
 
 class FeedScreen extends StatelessWidget {
   Future<DocumentSnapshot<Map<String, dynamic>>> _getUserData() async {
-    String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    return await FirebaseFirestore.instance.collection('users').doc(userId).get();
-  }
+  String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  int maxRetries = 3; // Maksimum deneme sayısı
+  int retryDelayMilliseconds = 1000; // Deneme aralığı (1 saniye)
 
-  Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
-    return await FirebaseFirestore.instance.collection('feels').orderBy('timestamp', descending: true).get();
+  for (int i = 0; i < maxRetries; i++) {
+    try {
+      return await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    } catch (e) {
+      if (i == maxRetries - 1) {
+        throw e; // Maksimum deneme sayısına ulaşıldığında hatayı yukarı yönlendir
+      }
+      await Future.delayed(Duration(milliseconds: retryDelayMilliseconds));
+    }
   }
+  throw Exception('Veri alınamadı');
+}
+
+Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
+  int maxRetries = 3; // Maksimum deneme sayısı
+  int retryDelayMilliseconds = 1000; // Deneme aralığı (1 saniye)
+
+  for (int i = 0; i < maxRetries; i++) {
+    try {
+      return await FirebaseFirestore.instance.collection('feels').orderBy('timestamp', descending: true).get();
+    } catch (e) {
+      if (i == maxRetries - 1) {
+        throw e; // Maksimum deneme sayısına ulaşıldığında hatayı yukarı yönlendir
+      }
+      await Future.delayed(Duration(milliseconds: retryDelayMilliseconds));
+    }
+  }
+  throw Exception('Veri alınamadı');
+}
 
   @override
   Widget build(BuildContext context) {

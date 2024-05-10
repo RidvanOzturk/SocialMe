@@ -20,6 +20,11 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text,
         password: _passwordController.text,
       );
+       ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Giriş başarılı! :)'),
+        ),
+      );
 
 
       Navigator.push(
