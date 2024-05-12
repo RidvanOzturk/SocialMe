@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_me/Screens/AddFeelScreen.dart';
@@ -14,11 +15,17 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Future<DocumentSnapshot<Map<String, dynamic>>> _getUserData() async {
     String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    return await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    return await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
-    return await FirebaseFirestore.instance.collection('feels').orderBy('timestamp', descending: true).get();
+    return await FirebaseFirestore.instance
+        .collection('feels')
+        .orderBy('timestamp', descending: true)
+        .get();
   }
 
   @override
@@ -57,14 +64,17 @@ class _FeedScreenState extends State<FeedScreen> {
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Hata: ${snapshot.error}'));
                   } else {
-                    List<QueryDocumentSnapshot<Map<String, dynamic>>> feels = snapshot.data?.docs ?? [];
+                    List<QueryDocumentSnapshot<Map<String, dynamic>>> feels =
+                        snapshot.data?.docs ?? [];
                     return ListView.builder(
                       itemCount: feels.length,
                       itemBuilder: (context, index) {
                         Map<String, dynamic> feelData = feels[index].data();
-                        Timestamp timestamp = feelData['timestamp'] ?? Timestamp.now();
-                        DateTime date = timestamp.toDate();
-                        String formattedDate = '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
+                        DateTime date = (feelData['timestamp'] as Timestamp)
+                            .toDate()
+                            .add(Duration(hours: 3)); // UTC+3 (Türkiye saati)
+                        String formattedDate =
+                            DateFormat.yMd().add_Hm().format(date);
 
                         return Card(
                           child: ListTile(
@@ -76,18 +86,76 @@ class _FeedScreenState extends State<FeedScreen> {
                                   children: [
                                     IconButton(
                                       onPressed: () async {
-                                        // Buton işlemleri
+                                        print('butona tıklandı');
+                                        String userId = FirebaseAuth
+                                                .instance.currentUser?.uid ??
+                                            '';
+                                        DocumentReference<Map<String, dynamic>>
+                                            feelRef = FirebaseFirestore.instance
+                                                .collection('feels')
+                                                .doc(feels[index].id);
+                                        await FirebaseFirestore.instance
+                                            .runTransaction(
+                                                (transaction) async {
+                                          DocumentSnapshot<Map<String, dynamic>>
+                                              feel =
+                                              await transaction.get(feelRef);
+                                          if (feel.exists &&
+                                              feel.data()?.containsKey(
+                                                      'beğenenlerListesi') ==
+                                                  true) {
+                                            print(
+                                                'Beğeni işlemi başarılı: ${feels[index].id}');
+                                            List<dynamic>? likers = feel
+                                                .data()?['beğenenlerListesi'];
+
+                                            if (likers != null &&
+                                                likers.contains(userId)) {
+                                              return;
+                                            }
+
+                                            int likes =
+                                                feel.data()?['beğeniSayısı'] ??
+                                                    0;
+                                            if (likers == null) {
+                                              likers = [userId];
+                                            } else {
+                                              likers.add(userId);
+                                            }
+                                            transaction.update(feelRef, {
+                                              'beğenenlerListesi': likers,
+                                              'beğeniSayısı': likes + 1,
+                                            });
+                                            setState(() {
+                                              List<
+                                                      QueryDocumentSnapshot<
+                                                          Map<String, dynamic>>>
+                                                  updatedFeels =
+                                                  List.from(feels);
+                                              updatedFeels[index]
+                                                      .data()['beğeniSayısı'] =
+                                                  likes + 1;
+                                              feels = updatedFeels;
+                                            });
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(SnackBar(
+                                              content: Text('Yazıyı Beğendin.'),
+                                              backgroundColor: Colors.green,
+                                            ));
+                                          }
+                                        });
                                       },
                                       icon: Icon(Icons.thumb_up),
                                     ),
-                                    SizedBox(width: 8),
                                     Text(
                                       '${feelData['beğeniSayısı'] ?? 0}',
-                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
-                                Text('Gönderen: ${_userData!['name']} - $formattedDate'),
+                                Text(
+                                    'Gönderen: ${_userData!['name']} - $formattedDate'),
                               ],
                             ),
                           ),
