@@ -4,40 +4,31 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_me/Screens/AddFeelScreen.dart';
 import 'package:social_me/Screens/ProfileScreen.dart';
 
-class FeedScreen extends StatelessWidget {
+class FeedScreen extends StatefulWidget {
+  @override
+  _FeedScreenState createState() => _FeedScreenState();
+}
+
+class _FeedScreenState extends State<FeedScreen> {
+  Map<String, dynamic>? _userData;
+
   Future<DocumentSnapshot<Map<String, dynamic>>> _getUserData() async {
     String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    int maxRetries = 3; // Maksimum deneme sayısı
-    int retryDelayMilliseconds = 1000; // Deneme aralığı (1 saniye)
-
-    for (int i = 0; i < maxRetries; i++) {
-      try {
-        return await FirebaseFirestore.instance.collection('users').doc(userId).get();
-      } catch (e) {
-        if (i == maxRetries - 1) {
-          throw e; // Maksimum deneme sayısına ulaşıldığında hatayı yukarı yönlendir
-        }
-        await Future.delayed(Duration(milliseconds: retryDelayMilliseconds));
-      }
-    }
-    throw Exception('Veri alınamadı');
+    return await FirebaseFirestore.instance.collection('users').doc(userId).get();
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
-    int maxRetries = 3; // Maksimum deneme sayısı
-    int retryDelayMilliseconds = 1000; // Deneme aralığı (1 saniye)
+    return await FirebaseFirestore.instance.collection('feels').orderBy('timestamp', descending: true).get();
+  }
 
-    for (int i = 0; i < maxRetries; i++) {
-      try {
-        return await FirebaseFirestore.instance.collection('feels').orderBy('timestamp', descending: true).get();
-      } catch (e) {
-        if (i == maxRetries - 1) {
-          throw e; // Maksimum deneme sayısına ulaşıldığında hatayı yukarı yönlendir
-        }
-        await Future.delayed(Duration(milliseconds: retryDelayMilliseconds));
-      }
-    }
-    throw Exception('Veri alınamadı');
+  @override
+  void initState() {
+    super.initState();
+    _getUserData().then((userData) {
+      setState(() {
+        _userData = userData.data();
+      });
+    });
   }
 
   @override
@@ -51,27 +42,11 @@ class FeedScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-              future: _getUserData(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Hata: ${snapshot.error}');
-                } else {
-                  Map<String, dynamic>? userData = snapshot.data?.data();
-                  if (userData == null) {
-                    return Text('Kullanıcı verileri yüklenirken bir hata oluştu.');
-                  }
-                  print(userData);
-                  return Text(
-                    'Merhaba, ${userData['name'] ?? 'İsim'} ${userData['surname'] ?? 'Soyisim'}!',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  );
-                }
-              },
-            ),
-            
+            if (_userData != null)
+              Text(
+                'Merhaba, ${_userData!['name'] ?? 'İsim'} ${_userData!['surname'] ?? 'Soyisim'}!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
             SizedBox(height: 20),
             Expanded(
               child: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -86,11 +61,9 @@ class FeedScreen extends StatelessWidget {
                     return ListView.builder(
                       itemCount: feels.length,
                       itemBuilder: (context, index) {
-
                         Map<String, dynamic> feelData = feels[index].data();
                         Timestamp timestamp = feelData['timestamp'] ?? Timestamp.now();
                         DateTime date = timestamp.toDate();
-                        print('Gönderen: ${feelData['userName']}');
                         String formattedDate = '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
 
                         return Card(
@@ -103,34 +76,10 @@ class FeedScreen extends StatelessWidget {
                                   children: [
                                     IconButton(
                                       onPressed: () async {
-                                        String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-                                        DocumentReference<Map<String, dynamic>> feelRef = FirebaseFirestore.instance.collection('feels').doc(feels[index].id);
-                                        await FirebaseFirestore.instance.runTransaction((transaction) async {
-                                          DocumentSnapshot<Map<String, dynamic>> feel = await transaction.get(feelRef);
-                                          if (feel.exists) {
-                                            List<dynamic>? likers = feel['beğenenlerListesi'];
-                                            if (likers != null && likers.contains(userId)) {
-                                              return;
-                                            }
-
-                                            int likes = feel['beğeniSayısı'] ?? 0;
-                                            if (likers == null) {
-                                              likers = [userId];
-                                            } else {
-                                              likers.add(userId);
-                                            }
-                                            transaction.update(feelRef, {'beğenenlerListesi': likers});
-                                            transaction.update(feelRef, {'beğeniSayısı': likes + 1}); 
-                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                              content: Text('Yazıyı Beğendin.'),
-                                              backgroundColor: Colors.green,
-                                            ));
-                                          }
-                                        });
+                                        // Buton işlemleri
                                       },
                                       icon: Icon(Icons.thumb_up),
                                     ),
-
                                     SizedBox(width: 8),
                                     Text(
                                       '${feelData['beğeniSayısı'] ?? 0}',
@@ -138,8 +87,7 @@ class FeedScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                Text('Gönderen: ${feelData['userName']} - $formattedDate'),
-
+                                Text('Gönderen: ${_userData!['name']} - $formattedDate'),
                               ],
                             ),
                           ),
