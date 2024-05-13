@@ -100,17 +100,13 @@ class _FeedScreenState extends State<FeedScreen> {
                                           DocumentSnapshot<Map<String, dynamic>>
                                               feel =
                                               await transaction.get(feelRef);
-                                          if (feel.exists &&
-                                              feel.data()?.containsKey(
-                                                      'beğenenlerListesi') ==
-                                                  true) {
-                                            print(
-                                                'Beğeni işlemi başarılı: ${feels[index].id}');
+                                          if (feel.exists) {
                                             List<dynamic>? likers = feel
                                                 .data()?['beğenenlerListesi'];
 
                                             if (likers != null &&
                                                 likers.contains(userId)) {
+                                              // Kullanıcı zaten beğenmiş, işlem yapmaya gerek yok
                                               return;
                                             }
 
@@ -127,15 +123,11 @@ class _FeedScreenState extends State<FeedScreen> {
                                               'beğeniSayısı': likes + 1,
                                             });
                                             setState(() {
-                                              List<
-                                                      QueryDocumentSnapshot<
-                                                          Map<String, dynamic>>>
-                                                  updatedFeels =
-                                                  List.from(feels);
-                                              updatedFeels[index]
+                                              feels[index].data()[
+                                                  'beğenenlerListesi'] = likers;
+                                              feels[index]
                                                       .data()['beğeniSayısı'] =
                                                   likes + 1;
-                                              feels = updatedFeels;
                                             });
                                             ScaffoldMessenger.of(context)
                                                 .showSnackBar(SnackBar(
