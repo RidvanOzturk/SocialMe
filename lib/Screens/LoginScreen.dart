@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => FeedScreen()),
       );
@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => FeedScreen()),
       );
@@ -88,6 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Social Me Login Page'),
+        leading: null, // Geri butonunu kaldırmak için leading'i null yapıyoruz
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

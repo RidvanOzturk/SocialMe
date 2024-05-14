@@ -21,11 +21,11 @@ class _FeedScreenState extends State<FeedScreen> {
         .get();
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> _getFeels() async {
-    return await FirebaseFirestore.instance
+  Stream<QuerySnapshot<Map<String, dynamic>>> _getFeelsStream() {
+    return FirebaseFirestore.instance
         .collection('feels')
         .orderBy('timestamp', descending: true)
-        .get();
+        .snapshots();
   }
 
   Future<Map<String, dynamic>?> _getUserDetails(String userId) async {
@@ -77,8 +77,8 @@ class _FeedScreenState extends State<FeedScreen> {
               ),
             SizedBox(height: 20),
             Expanded(
-              child: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                future: _getFeels(),
+              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: _getFeelsStream(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());
@@ -106,78 +106,140 @@ class _FeedScreenState extends State<FeedScreen> {
                               return Center(child: Text('Hata: ${userSnapshot.error}'));
                             } else {
                               Map<String, dynamic>? userData = userSnapshot.data;
-                              return Card(
-                                child: ListTile(
-                                  title: Text(feelData['feel'] ?? ''),
-                                  subtitle: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              String currentUserId =
+                                  FirebaseAuth.instance.currentUser?.uid ?? '';
+                              bool isLiked = feelData['beğenenlerListesi'] != null &&
+                                  feelData['beğenenlerListesi'].contains(currentUserId);
+
+                              return GestureDetector(
+                                onTap: feelData.containsKey('imageUrl')
+                                    ? () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ImageScreen(
+                                              imageUrl: feelData['imageUrl'],
+                                              imageDescription: feelData['description'] ?? '',
+                                              addedText: feelData['feel'] ?? '',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    : null,
+                                child: Card(
+                                  child: Stack(
                                     children: [
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            onPressed: () async {
-                                              print('butona tıklandı');
-                                              String userId = FirebaseAuth
-                                                  .instance.currentUser?.uid ??
-                                                  '';
-                                              DocumentReference<Map<String, dynamic>>
-                                              feelRef = FirebaseFirestore.instance
-                                                  .collection('feels')
-                                                  .doc(feels[index].id);
-                                              await FirebaseFirestore.instance
-                                                  .runTransaction(
-                                                      (transaction) async {
-                                                    DocumentSnapshot<Map<String, dynamic>>
-                                                    feel =
-                                                    await transaction.get(feelRef);
-                                                    if (feel.exists) {
-                                                      List<dynamic>? likers = feel
-                                                          .data()?['beğenenlerListesi'];
+                                      ListTile(
+                                        title: Text(feelData['feel'] ?? ''),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    IconButton(
+                                                      onPressed: () async {
+                                                        String userId = FirebaseAuth
+                                                                .instance.currentUser?.uid ??
+                                                            '';
+                                                        DocumentReference<
+                                                                Map<String, dynamic>>
+                                                            feelRef =
+                                                            FirebaseFirestore.instance
+                                                                .collection('feels')
+                                                                .doc(feels[index].id);
+                                                        await FirebaseFirestore.instance
+                                                            .runTransaction(
+                                                                (transaction) async {
+                                                          DocumentSnapshot<
+                                                                  Map<String, dynamic>>
+                                                              feel =
+                                                              await transaction
+                                                                  .get(feelRef);
+                                                          if (feel.exists) {
+                                                            List<dynamic>? likers =
+                                                                feel.data()?[
+                                                                    'beğenenlerListesi'];
+                                                            int likes =
+                                                                feel.data()?[
+                                                                        'beğeniSayısı'] ??
+                                                                    0;
 
-                                                      if (likers != null &&
-                                                          likers.contains(userId)) {
-                                                        // Kullanıcı zaten beğenmiş, işlem yapmaya gerek yok
-                                                        return;
-                                                      }
-
-                                                      int likes =
-                                                          feel.data()?['beğeniSayısı'] ??
-                                                              0;
-                                                      if (likers == null) {
-                                                        likers = [userId];
-                                                      } else {
-                                                        likers.add(userId);
-                                                      }
-                                                      transaction.update(feelRef, {
-                                                        'beğenenlerListesi': likers,
-                                                        'beğeniSayısı': likes + 1,
-                                                      });
-                                                      setState(() {
-                                                        feels[index].data()[
-                                                        'beğenenlerListesi'] = likers;
-                                                        feels[index]
-                                                            .data()['beğeniSayısı'] =
-                                                            likes + 1;
-                                                      });
-                                                      ScaffoldMessenger.of(context)
-                                                          .showSnackBar(SnackBar(
-                                                        content: Text('Yazıyı Beğendin.'),
-                                                        backgroundColor: Colors.green,
-                                                      ));
-                                                    }
-                                                  });
-                                            },
-                                            icon: Icon(Icons.thumb_up),
-                                          ),
-                                          Text(
-                                            '${feelData['beğeniSayısı'] ?? 0}',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                        ],
+                                                            if (likers != null &&
+                                                                likers.contains(userId)) {
+                                                              // Kullanıcı zaten beğenmiş, beğenisini kaldır
+                                                              likers.remove(userId);
+                                                              transaction.update(feelRef, {
+                                                                'beğenenlerListesi': likers,
+                                                                'beğeniSayısı': likes - 1,
+                                                              });
+                                                              ScaffoldMessenger.of(context)
+                                                                  .showSnackBar(SnackBar(
+                                                                content: Text(
+                                                                    'Beğeniyi Kaldırdın.'),
+                                                                backgroundColor:
+                                                                    Colors.red,
+                                                              ));
+                                                            } else {
+                                                              // Kullanıcı beğenmemiş, beğeni ekle
+                                                              if (likers == null) {
+                                                                likers = [userId];
+                                                              } else {
+                                                                likers.add(userId);
+                                                              }
+                                                              transaction.update(feelRef, {
+                                                                'beğenenlerListesi': likers,
+                                                                'beğeniSayısı': likes + 1,
+                                                              });
+                                                              ScaffoldMessenger.of(context)
+                                                                  .showSnackBar(SnackBar(
+                                                                content: Text(
+                                                                    'Yazıyı Beğendin.'),
+                                                                backgroundColor:
+                                                                    Colors.green,
+                                                              ));
+                                                            }
+                                                          }
+                                                        });
+                                                      },
+                                                      icon: Icon(
+                                                        Icons.thumb_up,
+                                                        color: isLiked
+                                                            ? Colors.purple
+                                                            : null,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '${feelData['beğeniSayısı'] ?? 0}',
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Flexible(
+                                                  child: Text(
+                                                    'Gönderen: ${userData?['name'] ?? 'Bilinmiyor'} - $formattedDate',
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      Text(
-                                          'Gönderen: ${userData?['name'] ?? 'Bilinmiyor'} - $formattedDate'),
+                                      if (feelData.containsKey('imageUrl'))
+                                        Positioned(
+                                          top: 0,
+                                          right: 0,
+                                          child: Icon(
+                                            Icons.image,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -216,6 +278,47 @@ class _FeedScreenState extends State<FeedScreen> {
                 );
               },
               icon: Icon(Icons.person),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ImageScreen extends StatelessWidget {
+  final String imageUrl;
+  final String imageDescription;
+  final String addedText;
+
+  ImageScreen({required this.imageUrl, required this.imageDescription, required this.addedText});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Resim Görüntüle'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12.0), // Border radius ekledik
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                width: 300, // İsteğe bağlı, resmin genişliğini ayarlayabilirsiniz
+              ),
+            ),
+            SizedBox(height: 16.0),
+            Container(
+              padding: EdgeInsets.all(8.0),
+              color: Colors.black54,
+              child: Text(
+                addedText, // Resimle birlikte eklenen yazı
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
