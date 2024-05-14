@@ -17,7 +17,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _getUserData();
     _getUserFeels();
+  }
+
+  Future<void> _getUserData() async {
+    String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    DocumentSnapshot userSnapshot = await _userRef.doc(userId).get();
+    if (userSnapshot.exists) {
+      Map<String, dynamic>? userData = userSnapshot.data() as Map<String, dynamic>?;
+      setState(() {
+        _nameController.text = userData?['name'] ?? '';
+        _surnameController.text = userData?['surname'] ?? '';
+      });
+    }
   }
 
   Future<void> _getUserFeels() async {
@@ -127,7 +140,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String name = _nameController.text.trim();
     String surname = _surnameController.text.trim();
     String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
 
     _userRef.doc(userId).set({
       'name': name,
