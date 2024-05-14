@@ -28,6 +28,14 @@ class _FeedScreenState extends State<FeedScreen> {
         .get();
   }
 
+  Future<Map<String, dynamic>?> _getUserDetails(String userId) async {
+    DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+    return userDoc.data();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -38,11 +46,24 @@ class _FeedScreenState extends State<FeedScreen> {
     });
   }
 
+  void _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('ANA SAYFA'),
+        leading: null, // Geri dönme butonunu kaldırmak için leading'i null yapıyoruz
+        actions: [
+          IconButton(
+            onPressed: _signOut,
+            icon: Icon(Icons.logout),
+            tooltip: 'Çıkış Yap',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -76,81 +97,93 @@ class _FeedScreenState extends State<FeedScreen> {
                         String formattedDate =
                             DateFormat.yMd().add_Hm().format(date);
 
-                        return Card(
-                          child: ListTile(
-                            title: Text(feelData['feel'] ?? ''),
-                            subtitle: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      onPressed: () async {
-                                        print('butona tıklandı');
-                                        String userId = FirebaseAuth
-                                                .instance.currentUser?.uid ??
-                                            '';
-                                        DocumentReference<Map<String, dynamic>>
-                                            feelRef = FirebaseFirestore.instance
-                                                .collection('feels')
-                                                .doc(feels[index].id);
-                                        await FirebaseFirestore.instance
-                                            .runTransaction(
-                                                (transaction) async {
-                                          DocumentSnapshot<Map<String, dynamic>>
-                                              feel =
-                                              await transaction.get(feelRef);
-                                          if (feel.exists) {
-                                            List<dynamic>? likers = feel
-                                                .data()?['beğenenlerListesi'];
+                        return FutureBuilder<Map<String, dynamic>?>(
+                          future: _getUserDetails(feelData['userId']),
+                          builder: (context, userSnapshot) {
+                            if (userSnapshot.connectionState == ConnectionState.waiting) {
+                              return Center(child: CircularProgressIndicator());
+                            } else if (userSnapshot.hasError) {
+                              return Center(child: Text('Hata: ${userSnapshot.error}'));
+                            } else {
+                              Map<String, dynamic>? userData = userSnapshot.data;
+                              return Card(
+                                child: ListTile(
+                                  title: Text(feelData['feel'] ?? ''),
+                                  subtitle: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            onPressed: () async {
+                                              print('butona tıklandı');
+                                              String userId = FirebaseAuth
+                                                  .instance.currentUser?.uid ??
+                                                  '';
+                                              DocumentReference<Map<String, dynamic>>
+                                              feelRef = FirebaseFirestore.instance
+                                                  .collection('feels')
+                                                  .doc(feels[index].id);
+                                              await FirebaseFirestore.instance
+                                                  .runTransaction(
+                                                      (transaction) async {
+                                                    DocumentSnapshot<Map<String, dynamic>>
+                                                    feel =
+                                                    await transaction.get(feelRef);
+                                                    if (feel.exists) {
+                                                      List<dynamic>? likers = feel
+                                                          .data()?['beğenenlerListesi'];
 
-                                            if (likers != null &&
-                                                likers.contains(userId)) {
-                                              // Kullanıcı zaten beğenmiş, işlem yapmaya gerek yok
-                                              return;
-                                            }
+                                                      if (likers != null &&
+                                                          likers.contains(userId)) {
+                                                        // Kullanıcı zaten beğenmiş, işlem yapmaya gerek yok
+                                                        return;
+                                                      }
 
-                                            int likes =
-                                                feel.data()?['beğeniSayısı'] ??
-                                                    0;
-                                            if (likers == null) {
-                                              likers = [userId];
-                                            } else {
-                                              likers.add(userId);
-                                            }
-                                            transaction.update(feelRef, {
-                                              'beğenenlerListesi': likers,
-                                              'beğeniSayısı': likes + 1,
-                                            });
-                                            setState(() {
-                                              feels[index].data()[
-                                                  'beğenenlerListesi'] = likers;
-                                              feels[index]
-                                                      .data()['beğeniSayısı'] =
-                                                  likes + 1;
-                                            });
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(SnackBar(
-                                              content: Text('Yazıyı Beğendin.'),
-                                              backgroundColor: Colors.green,
-                                            ));
-                                          }
-                                        });
-                                      },
-                                      icon: Icon(Icons.thumb_up),
-                                    ),
-                                    Text(
-                                      '${feelData['beğeniSayısı'] ?? 0}',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
+                                                      int likes =
+                                                          feel.data()?['beğeniSayısı'] ??
+                                                              0;
+                                                      if (likers == null) {
+                                                        likers = [userId];
+                                                      } else {
+                                                        likers.add(userId);
+                                                      }
+                                                      transaction.update(feelRef, {
+                                                        'beğenenlerListesi': likers,
+                                                        'beğeniSayısı': likes + 1,
+                                                      });
+                                                      setState(() {
+                                                        feels[index].data()[
+                                                        'beğenenlerListesi'] = likers;
+                                                        feels[index]
+                                                            .data()['beğeniSayısı'] =
+                                                            likes + 1;
+                                                      });
+                                                      ScaffoldMessenger.of(context)
+                                                          .showSnackBar(SnackBar(
+                                                        content: Text('Yazıyı Beğendin.'),
+                                                        backgroundColor: Colors.green,
+                                                      ));
+                                                    }
+                                                  });
+                                            },
+                                            icon: Icon(Icons.thumb_up),
+                                          ),
+                                          Text(
+                                            '${feelData['beğeniSayısı'] ?? 0}',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                          'Gönderen: ${userData?['name'] ?? 'Bilinmiyor'} - $formattedDate'),
+                                    ],
+                                  ),
                                 ),
-                                Text(
-                                    'Gönderen: ${_userData!['name']} - $formattedDate'),
-                              ],
-                            ),
-                          ),
+                              );
+                            }
+                          },
                         );
                       },
                     );
