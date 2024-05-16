@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:social_me/Screens/AddFeelScreen.dart';
 import 'package:social_me/Screens/ProfileScreen.dart';
 
@@ -15,10 +15,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Future<DocumentSnapshot<Map<String, dynamic>>> _getUserData() async {
     String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    return await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
+    return await FirebaseFirestore.instance.collection('users').doc(userId).get();
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _getFeelsStream() {
@@ -29,10 +26,8 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Future<Map<String, dynamic>?> _getUserDetails(String userId) async {
-    DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
+    DocumentSnapshot<Map<String, dynamic>> userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
     return userDoc.data();
   }
 
@@ -41,7 +36,7 @@ class _FeedScreenState extends State<FeedScreen> {
     super.initState();
     _getUserData().then((userData) {
       setState(() {
-        _userData = userData.data();
+        _userData = (userData.data() as Map<String, dynamic>?)!;
       });
     });
   }
@@ -56,7 +51,7 @@ class _FeedScreenState extends State<FeedScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('ANA SAYFA'),
-        leading: null, // Geri dönme butonunu kaldırmak için leading'i null yapıyoruz
+        leading: null,
         actions: [
           IconButton(
             onPressed: _signOut,
@@ -100,7 +95,8 @@ class _FeedScreenState extends State<FeedScreen> {
                         return FutureBuilder<Map<String, dynamic>?>(
                           future: _getUserDetails(feelData['userId']),
                           builder: (context, userSnapshot) {
-                            if (userSnapshot.connectionState == ConnectionState.waiting) {
+                            if (userSnapshot.connectionState ==
+                                ConnectionState.waiting) {
                               return Center(child: CircularProgressIndicator());
                             } else if (userSnapshot.hasError) {
                               return Center(child: Text('Hata: ${userSnapshot.error}'));
@@ -112,20 +108,19 @@ class _FeedScreenState extends State<FeedScreen> {
                                   feelData['beğenenlerListesi'].contains(currentUserId);
 
                               return GestureDetector(
-                                onTap: feelData.containsKey('imageUrl')
-                                    ? () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ImageScreen(
-                                              imageUrl: feelData['imageUrl'],
-                                              imageDescription: feelData['description'] ?? '',
-                                              addedText: feelData['feel'] ?? '',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    : null,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PostDetailScreen(
+                                        postId: feels[index].id,
+                                        feelData: feelData,
+                                        userData: userData,
+                                        formattedDate: formattedDate,
+                                      ),
+                                    ),
+                                  );
+                                },
                                 child: Card(
                                   child: Stack(
                                     children: [
@@ -178,7 +173,7 @@ class _FeedScreenState extends State<FeedScreen> {
                                                               });
                                                               ScaffoldMessenger.of(context)
                                                                   .showSnackBar(SnackBar(
-                                                                content: Text(
+                                                                                                                                  content: Text(
                                                                     'Beğeniyi Kaldırdın.'),
                                                                 backgroundColor:
                                                                     Colors.red,
@@ -222,7 +217,7 @@ class _FeedScreenState extends State<FeedScreen> {
                                                 ),
                                                 Flexible(
                                                   child: Text(
-                                                    'Gönderen: ${userData?['name'] ?? 'Bilinmiyor'} - $formattedDate',
+                                                    'Gönderen: ${userData?['name'] ?? 'Bilinmiyor'} ${userData?['surname'] ?? ''} - $formattedDate',
                                                     overflow: TextOverflow.ellipsis,
                                                   ),
                                                 ),
@@ -286,38 +281,118 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 }
 
-class ImageScreen extends StatelessWidget {
-  final String imageUrl;
-  final String imageDescription;
-  final String addedText;
+class PostDetailScreen extends StatefulWidget {
+  final String postId;
+  final Map<String, dynamic> feelData;
+  final Map<String, dynamic>? userData;
+  final String formattedDate;
 
-  ImageScreen({required this.imageUrl, required this.imageDescription, required this.addedText});
+  PostDetailScreen({
+    required this.postId,
+    required this.feelData,
+    required this.userData,
+    required this.formattedDate,
+  });
+
+  @override
+  _PostDetailScreenState createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends State<PostDetailScreen> {
+  final TextEditingController _commentController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  void _submitComment() async {
+    if (_commentController.text.isEmpty) return;
+
+    String userId = _auth.currentUser?.uid ?? '';
+    DocumentReference postRef = _firestore.collection('feels').doc(widget.postId);
+
+    await postRef.collection('comments').add({
+      'text': _commentController.text,
+      'userId': userId,
+      'timestamp': Timestamp.now(),
+    });
+
+    _commentController.clear();
+  }
+
+  Stream<List<Map<String, dynamic>>> _getCommentsStream() {
+    return FirebaseFirestore.instance
+        .collection('feels')
+        .doc(widget.postId)
+        .collection('comments')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => {
+              'text': doc['text'],
+              'userId': doc['userId'],
+              'timestamp': doc['timestamp'],
+            }).toList());
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Resim Görüntüle'),
+        title: Text('Gönderi Detayı'),
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12.0), // Border radius ekledik
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                width: 300, // İsteğe bağlı, resmin genişliğini ayarlayabilirsiniz
+            if (widget.feelData.containsKey('imageUrl'))
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10.0),
+                child: Image.network(widget.feelData['imageUrl']),
+              ),
+            SizedBox(height: 10),
+            Text(
+              widget.feelData['feel'] ?? '',
+              style: TextStyle(fontSize: 20),
+            ),
+            SizedBox(height: 10),
+            Text('Gönderen: ${widget.userData?['name'] ?? 'Bilinmiyor'} ${widget.userData?['surname'] ?? ''}'),
+            Text('Tarih: ${widget.formattedDate}'),
+            Divider(),
+            Expanded(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
+                stream: _getCommentsStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Hata: ${snapshot.error}'));
+                  } else {
+                    List<Map<String, dynamic>> comments = snapshot.data ?? [];
+                    return ListView.builder(
+                      itemCount: comments.length,
+                      itemBuilder: (context, index) {
+                        Map<String, dynamic> comment = comments[index];
+                        DateTime date = (comment['timestamp'] as Timestamp).toDate();
+                        String formattedDate =
+                            DateFormat.yMd().add_Hm().format(date);
+                        return ListTile(
+                          title: Text(comment['user']),
+                          subtitle: Text(comment['text']),
+                          trailing: Text(formattedDate),
+                        );
+                      },
+                    );
+                  }
+                },
               ),
             ),
-            SizedBox(height: 16.0),
-            Container(
-              padding: EdgeInsets.all(8.0),
-              color: Colors.black54,
-              child: Text(
-                addedText, // Resimle birlikte eklenen yazı
-                style: TextStyle(color: Colors.white),
+            TextField(
+              controller: _commentController,
+              decoration: InputDecoration(
+                labelText: 'Yorum yap',
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.send),
+                  onPressed: _submitComment,
+                ),
               ),
             ),
           ],
