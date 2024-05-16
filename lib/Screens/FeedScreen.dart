@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:social_me/Screens/AddFeelScreen.dart';
+import 'package:social_me/Screens/LoginScreen.dart';
 import 'package:social_me/Screens/ProfileScreen.dart';
 
 class FeedScreen extends StatefulWidget {
@@ -15,7 +16,10 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Future<DocumentSnapshot<Map<String, dynamic>>> _getUserData() async {
     String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    return await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    return await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _getFeelsStream() {
@@ -25,11 +29,18 @@ class _FeedScreenState extends State<FeedScreen> {
         .snapshots();
   }
 
-  Future<Map<String, dynamic>?> _getUserDetails(String userId) async {
+ Future<Map<String, dynamic>?> _getUserDetails(String userId) async {
+  if (userId.isNotEmpty) { // userId boş değilse devam et
     DocumentSnapshot<Map<String, dynamic>> userDoc =
         await FirebaseFirestore.instance.collection('users').doc(userId).get();
     return userDoc.data();
+  } else {
+    print('Hata: userId boş veya eksik');
+    return null; // Eğer userId boş ise null döndür
   }
+}
+
+
 
   @override
   void initState() {
@@ -43,7 +54,10 @@ class _FeedScreenState extends State<FeedScreen> {
 
   void _signOut() async {
     await FirebaseAuth.instance.signOut();
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
   }
 
   @override
@@ -99,13 +113,17 @@ class _FeedScreenState extends State<FeedScreen> {
                                 ConnectionState.waiting) {
                               return Center(child: CircularProgressIndicator());
                             } else if (userSnapshot.hasError) {
-                              return Center(child: Text('Hata: ${userSnapshot.error}'));
+                              return Center(
+                                  child: Text('Hata: ${userSnapshot.error}'));
                             } else {
-                              Map<String, dynamic>? userData = userSnapshot.data;
+                              Map<String, dynamic>? userData =
+                                  userSnapshot.data;
                               String currentUserId =
                                   FirebaseAuth.instance.currentUser?.uid ?? '';
-                              bool isLiked = feelData['beğenenlerListesi'] != null &&
-                                  feelData['beğenenlerListesi'].contains(currentUserId);
+                              bool isLiked =
+                                  feelData['beğenenlerListesi'] != null &&
+                                      feelData['beğenenlerListesi']
+                                          .contains(currentUserId);
 
                               return GestureDetector(
                                 onTap: () {
@@ -127,74 +145,109 @@ class _FeedScreenState extends State<FeedScreen> {
                                       ListTile(
                                         title: Text(feelData['feel'] ?? ''),
                                         subtitle: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               mainAxisAlignment:
-                                                  MainAxisAlignment.spaceBetween,
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               children: [
                                                 Row(
                                                   children: [
                                                     IconButton(
                                                       onPressed: () async {
-                                                        String userId = FirebaseAuth
-                                                                .instance.currentUser?.uid ??
-                                                            '';
+                                                        String userId =
+                                                            FirebaseAuth
+                                                                    .instance
+                                                                    .currentUser
+                                                                    ?.uid ??
+                                                                '';
                                                         DocumentReference<
-                                                                Map<String, dynamic>>
+                                                                Map<String,
+                                                                    dynamic>>
                                                             feelRef =
-                                                            FirebaseFirestore.instance
-                                                                .collection('feels')
-                                                                .doc(feels[index].id);
-                                                        await FirebaseFirestore.instance
+                                                            FirebaseFirestore
+                                                                .instance
+                                                                .collection(
+                                                                    'feels')
+                                                                .doc(
+                                                                    feels[index]
+                                                                        .id);
+                                                        await FirebaseFirestore
+                                                            .instance
                                                             .runTransaction(
                                                                 (transaction) async {
                                                           DocumentSnapshot<
-                                                                  Map<String, dynamic>>
+                                                                  Map<String,
+                                                                      dynamic>>
                                                               feel =
                                                               await transaction
                                                                   .get(feelRef);
                                                           if (feel.exists) {
-                                                            List<dynamic>? likers =
+                                                            List<dynamic>?
+                                                                likers =
                                                                 feel.data()?[
                                                                     'beğenenlerListesi'];
-                                                            int likes =
-                                                                feel.data()?[
-                                                                        'beğeniSayısı'] ??
-                                                                    0;
+                                                            int likes = feel
+                                                                        .data()?[
+                                                                    'beğeniSayısı'] ??
+                                                                0;
 
-                                                            if (likers != null &&
-                                                                likers.contains(userId)) {
+                                                            if (likers !=
+                                                                    null &&
+                                                                likers.contains(
+                                                                    userId)) {
                                                               // Kullanıcı zaten beğenmiş, beğenisini kaldır
-                                                              likers.remove(userId);
-                                                              transaction.update(feelRef, {
-                                                                'beğenenlerListesi': likers,
-                                                                'beğeniSayısı': likes - 1,
+                                                              likers.remove(
+                                                                  userId);
+                                                              transaction
+                                                                  .update(
+                                                                      feelRef, {
+                                                                'beğenenlerListesi':
+                                                                    likers,
+                                                                'beğeniSayısı':
+                                                                    likes - 1,
                                                               });
-                                                              ScaffoldMessenger.of(context)
-                                                                  .showSnackBar(SnackBar(
-                                                                                                                                  content: Text(
+                                                              ScaffoldMessenger
+                                                                      .of(
+                                                                          context)
+                                                                  .showSnackBar(
+                                                                      SnackBar(
+                                                                content: Text(
                                                                     'Beğeniyi Kaldırdın.'),
                                                                 backgroundColor:
                                                                     Colors.red,
                                                               ));
                                                             } else {
                                                               // Kullanıcı beğenmemiş, beğeni ekle
-                                                              if (likers == null) {
-                                                                likers = [userId];
+                                                              if (likers ==
+                                                                  null) {
+                                                                likers = [
+                                                                  userId
+                                                                ];
                                                               } else {
-                                                                likers.add(userId);
+                                                                likers.add(
+                                                                    userId);
                                                               }
-                                                              transaction.update(feelRef, {
-                                                                'beğenenlerListesi': likers,
-                                                                'beğeniSayısı': likes + 1,
+                                                              transaction
+                                                                  .update(
+                                                                      feelRef, {
+                                                                'beğenenlerListesi':
+                                                                    likers,
+                                                                'beğeniSayısı':
+                                                                    likes + 1,
                                                               });
-                                                              ScaffoldMessenger.of(context)
-                                                                  .showSnackBar(SnackBar(
+                                                              ScaffoldMessenger
+                                                                      .of(
+                                                                          context)
+                                                                  .showSnackBar(
+                                                                      SnackBar(
                                                                 content: Text(
                                                                     'Yazıyı Beğendin.'),
                                                                 backgroundColor:
-                                                                    Colors.green,
+                                                                    Colors
+                                                                        .green,
                                                               ));
                                                             }
                                                           }
@@ -218,7 +271,8 @@ class _FeedScreenState extends State<FeedScreen> {
                                                 Flexible(
                                                   child: Text(
                                                     'Gönderen: ${userData?['name'] ?? 'Bilinmiyor'} ${userData?['surname'] ?? ''} - $formattedDate',
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                               ],
@@ -303,11 +357,25 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  Future<Map<String, dynamic>?> _getUserDetails(String userId) async {
+  if (userId != null && userId.isNotEmpty) { // userId null değil ve boş değilse devam et
+    DocumentSnapshot<Map<String, dynamic>> userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    return userDoc.data();
+  } else {
+    print('Hata: userId null, boş veya eksik');
+    return null; // Eğer userId null veya boş ise null döndür
+  }
+}
+
+
+
   void _submitComment() async {
     if (_commentController.text.isEmpty) return;
 
     String userId = _auth.currentUser?.uid ?? '';
-    DocumentReference postRef = _firestore.collection('feels').doc(widget.postId);
+    DocumentReference postRef =
+        _firestore.collection('feels').doc(widget.postId);
 
     await postRef.collection('comments').add({
       'text': _commentController.text,
@@ -325,11 +393,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         .collection('comments')
         .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {
-              'text': doc['text'],
-              'userId': doc['userId'],
-              'timestamp': doc['timestamp'],
-            }).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => {
+                  'text': doc['text'],
+                  'userId': doc['userId'],
+                  'timestamp': doc['timestamp'],
+                })
+            .toList());
   }
 
   @override
@@ -354,7 +424,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               style: TextStyle(fontSize: 20),
             ),
             SizedBox(height: 10),
-            Text('Gönderen: ${widget.userData?['name'] ?? 'Bilinmiyor'} ${widget.userData?['surname'] ?? ''}'),
+            Text(
+                'Gönderen: ${widget.userData?['name'] ?? 'Bilinmiyor'} ${widget.userData?['surname'] ?? ''}'),
             Text('Tarih: ${widget.formattedDate}'),
             Divider(),
             Expanded(
@@ -371,11 +442,29 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       itemCount: comments.length,
                       itemBuilder: (context, index) {
                         Map<String, dynamic> comment = comments[index];
-                        DateTime date = (comment['timestamp'] as Timestamp).toDate();
+                        DateTime date =
+                            (comment['timestamp'] as Timestamp).toDate();
                         String formattedDate =
                             DateFormat.yMd().add_Hm().format(date);
                         return ListTile(
-                          title: Text(comment['user']),
+                          title: FutureBuilder<Map<String, dynamic>?>(
+                            future: _getUserDetails(comment['userId']),
+                            builder: (context, userSnapshot) {
+                              if (userSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return CircularProgressIndicator();
+                              } else if (userSnapshot.hasError) {
+                                return Text('Hata: ${userSnapshot.error}');
+                              } else {
+                                Map<String, dynamic>? userData =
+                                    userSnapshot.data;
+                                String userName =
+                                    userData?['name'] ?? 'Bilinmiyor';
+                                String userSurname = userData?['surname'] ?? '';
+                                return Text('$userName $userSurname');
+                              }
+                            },
+                          ),
                           subtitle: Text(comment['text']),
                           trailing: Text(formattedDate),
                         );
