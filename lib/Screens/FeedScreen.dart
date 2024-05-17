@@ -29,16 +29,20 @@ class _FeedScreenState extends State<FeedScreen> {
         .snapshots();
   }
 
- Future<Map<String, dynamic>?> _getUserDetails(String userId) async {
-  if (userId.isNotEmpty) { // userId boş değilse devam et
-    DocumentSnapshot<Map<String, dynamic>> userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    return userDoc.data();
-  } else {
-    print('Hata: userId boş veya eksik');
-    return null; // Eğer userId boş ise null döndür
+  Future<Map<String, dynamic>?> _getUserDetails(String userId) async {
+    if (userId.isNotEmpty) {
+      // userId boş değilse devam et
+      DocumentSnapshot<Map<String, dynamic>> userDoc = await FirebaseFirestore
+          .instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      return userDoc.data();
+    } else {
+      print('Hata: userId boş veya eksik');
+      return null; // Eğer userId boş ise null döndür
+    }
   }
-}
 
   @override
   void initState() {
@@ -139,7 +143,8 @@ class _FeedScreenState extends State<FeedScreen> {
                                 },
                                 child: Card(
                                   child: Container(
-                                    padding: EdgeInsets.all(10.0), // Add padding for more height
+                                    padding: EdgeInsets.all(
+                                        10.0), // Add padding for more height
                                     child: Stack(
                                       children: [
                                         ListTile(
@@ -171,88 +176,94 @@ class _FeedScreenState extends State<FeedScreen> {
                                                                   .instance
                                                                   .collection(
                                                                       'feels')
-                                                                  .doc(
-                                                                      feels[index]
-                                                                          .id);
+                                                                  .doc(feels[
+                                                                          index]
+                                                                      .id);
                                                           await FirebaseFirestore
                                                               .instance
                                                               .runTransaction(
-                                                                  (transaction) async {
-                                                            DocumentSnapshot<
-                                                                    Map<String,
-                                                                        dynamic>>
-                                                                feel =
-                                                                await transaction
-                                                                    .get(
-                                                                        feelRef);
-                                                            if (feel.exists) {
-                                                              List<dynamic>?
-                                                                  likers =
-                                                                  feel.data()?[
-                                                                      'beğenenlerListesi'];
-                                                              int likes = feel
-                                                                          .data()?[
-                                                                      'beğeniSayısı'] ??
-                                                                  0;
+                                                            (transaction) async {
+                                                              DocumentSnapshot<
+                                                                      Map<String,
+                                                                          dynamic>>
+                                                                  feel =
+                                                                  await transaction
+                                                                      .get(
+                                                                          feelRef);
+                                                              if (feel.exists) {
+                                                                List<dynamic>?
+                                                                    likers =
+                                                                    feel.data()?[
+                                                                        'beğenenlerListesi'];
+                                                                int likes =
+                                                                    feel.data()?[
+                                                                            'beğeniSayısı'] ??
+                                                                        0;
 
-                                                              if (likers !=
-                                                                      null &&
-                                                                  likers.contains(
-                                                                      userId)) {
-                                                                // Kullanıcı zaten beğenmiş, beğenisini kaldır
-                                                                likers.remove(
-                                                                    userId);
-                                                                transaction
-                                                                    .update(
-                                                                        feelRef, {
-                                                                  'beğenenlerListesi':
-                                                                      likers,
-                                                                  'beğeniSayısı':
-                                                                      likes - 1,
-                                                                });
-                                                                ScaffoldMessenger
-                                                                        .of(
-                                                                            context)
-                                                                    .showSnackBar(
-                                                                        SnackBar(
-                                                                  content: Text(
-                                                                      'Beğeniyi Kaldırdın.'),
-                                                                  backgroundColor:
-                                                                      Colors.red,
-                                                                ));
-                                                              } else {
-                                                                // Kullanıcı beğenmemiş, beğeni ekle
-                                                                if (likers ==
-                                                                    null) {
-                                                                  likers = [
-                                                                    userId
-                                                                  ];
-                                                                } else {
-                                                                  likers.add(
+                                                                if (likers !=
+                                                                        null &&
+                                                                    likers.contains(
+                                                                        userId)) {
+                                                                  // Kullanıcı zaten beğenmiş, beğenisini kaldır
+                                                                  likers.remove(
                                                                       userId);
+                                                                  transaction
+                                                                      .update(
+                                                                          feelRef,
+                                                                          {
+                                                                        'beğenenlerListesi':
+                                                                            likers,
+                                                                        'beğeniSayısı':
+                                                                            likes -
+                                                                                1,
+                                                                      });
+                                                                  ScaffoldMessenger.of(
+                                                                          context)
+                                                                      .showSnackBar(
+                                                                    SnackBar(
+                                                                      content: Text(
+                                                                          'Beğeniyi Kaldırdın.'),
+                                                                      backgroundColor:
+                                                                          Colors
+                                                                              .red,
+                                                                    ),
+                                                                  );
+                                                                } else {
+                                                                  // Kullanıcı beğenmemiş, beğeni ekle
+                                                                  if (likers ==
+                                                                      null) {
+                                                                    likers = [
+                                                                      userId
+                                                                    ];
+                                                                  } else {
+                                                                    likers.add(
+                                                                        userId);
+                                                                  }
+                                                                  transaction
+                                                                      .update(
+                                                                          feelRef,
+                                                                          {
+                                                                        'beğenenlerListesi':
+                                                                            likers,
+                                                                        'beğeniSayısı':
+                                                                            likes +
+                                                                                1,
+                                                                      });
+                                                                  ScaffoldMessenger.of(
+                                                                          context)
+                                                                      .showSnackBar(
+                                                                    SnackBar(
+                                                                      content: Text(
+                                                                          'Yazıyı Beğendin.'),
+                                                                      backgroundColor:
+                                                                          Colors
+                                                                              .green,
+                                                                    ),
+                                                                  );
                                                                 }
-                                                                transaction
-                                                                    .update(
-                                                                        feelRef, {
-                                                                  'beğenenlerListesi':
-                                                                      likers,
-                                                                  'beğeniSayısı':
-                                                                      likes + 1,
-                                                                });
-                                                                ScaffoldMessenger
-                                                                        .of(
-                                                                            context)
-                                                                    .showSnackBar(
-                                                                        SnackBar(
-                                                                  content: Text(
-                                                                      'Yazıyı Beğendin.'),
-                                                                  backgroundColor:
-                                                                      Colors
-                                                                          .green,
-                                                                ));
                                                               }
-                                                            }
-                                                          });
+                                                            },
+                                                          );
                                                         },
                                                         icon: Icon(
                                                           Icons.thumb_up,
@@ -260,14 +271,38 @@ class _FeedScreenState extends State<FeedScreen> {
                                                               ? Colors.purple
                                                               : null,
                                                         ),
+                                                        padding: EdgeInsets
+                                                            .zero, // Butonun etrafındaki boşlukları kaldırır
+                                                        visualDensity: VisualDensity
+                                                            .compact, // Butonun boyutunu küçültür
                                                       ),
-                                                      SizedBox(width: 5), // Reduce spacing
+                                                      SizedBox(
+                                                          width:
+                                                              5), // Boşluk ekler
+
+// Beğeni sayısının altına bir çizgi ekler
+                                                      Container(
+                                                        height: 1,
+                                                        color: Colors.grey,
+                                                        margin: EdgeInsets
+                                                            .symmetric(
+                                                                vertical:
+                                                                    2), // Çizginin üst ve alt boşluklarını ayarlar
+                                                      ),
+
+                                                      SizedBox(
+                                                          width:
+                                                              5), // Boşluk ekler
                                                       InkWell(
                                                         onTap: () {
                                                           _showLikersDialog(
-                                                              feelData['beğenenlerListesi']);
+                                                              feelData[
+                                                                  'beğenenlerListesi']);
                                                         },
                                                         child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
                                                           children: [
                                                             Text(
                                                               '${feelData['beğeniSayısı'] ?? 0}',
@@ -277,13 +312,16 @@ class _FeedScreenState extends State<FeedScreen> {
                                                                           .bold),
                                                             ),
                                                             Container(
-                                                              height: 2,
-                                                              color: Colors
-                                                                  .purple,
-                                                            ), // Add underline
+                                                              height: 1,
+                                                              color:
+                                                                  Colors.grey,
+                                                              width:
+                                                                  10,
+                                                            ),
                                                           ],
                                                         ),
                                                       ),
+                                                       SizedBox(width: 7),
                                                     ],
                                                   ),
                                                   Flexible(
