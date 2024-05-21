@@ -372,6 +372,22 @@ class _FeedScreenState extends State<FeedScreen> {
         child: Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+       bottomNavigationBar: BottomAppBar(
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ProfileScreen()),
+            );
+          },
+          icon: Icon(Icons.person),
+        ),
+      ],
+    ),
+  ),
     );
   }
 
