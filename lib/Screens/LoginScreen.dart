@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (context) => FeedScreen()),
       );
     } catch (e) {
-      String errorMessage = 'Bir hata oluştu.';
+      String errorMessage = 'Bir hata oluştu. Uygun formatta deneyin.';
       if (e is FirebaseAuthException) {
         if (e.code == 'weak-password') {
           errorMessage = 'Şifreniz en az 6 karakter olmalıdır.';
