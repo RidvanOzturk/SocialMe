@@ -41,6 +41,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  Future<void> _deleteFeel(String feelId) async {
+    try {
+      await _feelsRef.doc(feelId).delete();
+      setState(() {
+        _userFeels.removeWhere((feel) => feel.id == feelId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Gönderi başarıyla silindi.'),
+        backgroundColor: Colors.green,
+      ));
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Gönderi silme hatası: $error'),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,6 +129,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               color: Colors.grey,
                             ),
                           ),
+                          SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: IconButton(
+                              icon: Icon(Icons.delete),
+                              color: Colors.red,
+                              onPressed: () => _deleteFeel(_userFeels[index].id),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -145,13 +172,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'name': name,
       'surname': surname,
     }).then((_) {
-      // Kayıt başarılıysa
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Profil başarıyla güncellendi.'),
         backgroundColor: Colors.green,
       ));
     }).catchError((error) {
-      // Hata durumunda
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Profil güncelleme hatası: $error'),
         backgroundColor: Colors.red,
@@ -159,3 +184,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 }
+
